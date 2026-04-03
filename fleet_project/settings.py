@@ -1,11 +1,27 @@
 import os
+import environ
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-x_%^_s%_qclt2+5&j1)70^az*m7#hiobbrf4nnm-f1ri6)gk)5')
+env = environ.Env(
+    DEBUG=(bool, False),
+    POSTGRES_DB=(str, 'fleet_db'),
+    POSTGRES_USER=(str, 'tracking_user'),
+    POSTGRES_PASSWORD=(str, 'secretpassword'),
+    POSTGRES_HOST=(str, 'db'),
+    POSTGRES_PORT=(str, '5432'),
+    CELERY_BROKER_URL=(str, 'redis://redis:6379/0'),
+    CELERY_RESULT_BACKEND=(str, 'redis://redis:6379/0'),
+    REDIS_URL=(str, 'redis://redis:6379/1'),
+)
 
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+# Reading .env file
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
+SECRET_KEY = env('SECRET_KEY', default='django-insecure-x_%^_s%_qclt2+5&j1)70^az*m7#hiobbrf4nnm-f1ri6)gk)5')
+
+DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ['*']
 
@@ -53,11 +69,11 @@ WSGI_APPLICATION = 'fleet_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'fleet_db'),
-        'USER': os.environ.get('POSTGRES_USER', 'tracking_user'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'secretpassword'),
-        'HOST': os.environ.get('POSTGRES_HOST', 'db'),
-        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        'NAME': env('POSTGRES_DB'),
+        'USER': env('POSTGRES_USER'),
+        'PASSWORD': env('POSTGRES_PASSWORD'),
+        'HOST': env('POSTGRES_HOST'),
+        'PORT': env('POSTGRES_PORT'),
     }
 }
 
@@ -77,8 +93,8 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Celery Configuration Options
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+CELERY_BROKER_URL = env('CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')
 CELERY_TIMEZONE = "UTC"
 
 from celery.schedules import crontab
@@ -104,6 +120,6 @@ CELERY_BEAT_SCHEDULE = {
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': os.environ.get('REDIS_URL', 'redis://redis:6379/1'),
+        'LOCATION': env('REDIS_URL'),
     }
 }
