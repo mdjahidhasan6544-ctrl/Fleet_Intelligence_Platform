@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fleet Tracking & Fuel Intelligence</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; height: 100vh; flex-direction: column; }
+        header { background: #1a202c; color: white; padding: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        main { display: flex; flex: 1; overflow: hidden; }
+        #map { flex: 2; height: 100%; }
+        #sidebar { flex: 1; display: flex; flex-direction: column; background: #f7fafc; border-left: 1px solid #e2e8f0; }
+        .panel { padding: 1rem; flex: 1; overflow-y: auto; border-bottom: 1px solid #e2e8f0; }
+        h3 { margin-top: 0; color: #2d3748; border-bottom: 2px solid #edf2f7; padding-bottom: 0.5rem; }
+        .alert-card { background: #fff5f5; border-left: 4px solid #f56565; padding: 0.75rem; margin-bottom: 0.75rem; border-radius: 0.25rem; font-size: 0.9rem; }
+        .device-item { padding: 0.5rem; border-bottom: 1px solid #edf2f7; font-size: 0.9rem; }
+        .status-pill { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; background: #48bb78; color: white; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Fleet Intelligence Platform</h1>
+    </header>
+    <main>
+        <div id="map"></div>
+        <div id="sidebar">
+            <div class="panel">
+                <h3>Live Alerts</h3>
+                <div id="alert-container"></div>
+            </div>
+            <div class="panel">
+                <h3>Devices</h3>
+                <div id="device-list"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([34.0522, -118.2437], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        var markers = {};
+
+        function updateUI() {
+            // Update Devices
+            fetch('/api/v1/live-state/')
+                .then(r => r.json())
+                .then(data => {
+                    const list = document.getElementById('device-list');
+                    list.innerHTML = '';
+                    data.forEach(device => {
+                        const lat = parseFloat(device.lat);
+                        const lng = parseFloat(device.lng);
+                        
+                        if(markers[device.device_id]) {
+                            markers[device.device_id].setLatLng([lat, lng]);
+                        } else {
+                            markers[device.device_id] = L.marker([lat, lng]).addTo(map)
+                                .bindPopup(`<b>Device: ${device.device_id}</b><br>Fuel: ${device.fuel}%<br>Speed: ${device.speed} km/h`);
+                        }
+                        
+                        const item = document.createElement('div');
+                        item.className = 'device-item';
+                        item.innerHTML = `<strong>${device.device_id}</strong> <span class="status-pill">Active</span><br>
+                                          Fuel: ${device.fuel}% | Speed: ${device.speed} km/h`;
+                        list.appendChild(item);
+                    });
+                });
+
+            // Update Alerts
+            fetch('/api/v1/alerts/')
+                .then(r => r.json())
+                .then(data => {
+                    const container = document.getElementById('alert-container');
+                    container.innerHTML = '';
+                    data.forEach(alert => {
+                        const card = document.createElement('div');
+                        card.className = 'alert-card';
+                        card.innerHTML = `<strong>${alert.type}</strong><br>${alert.message}<br><small>${alert.timestamp}</small>`;
+                        container.appendChild(card);
+                    });
+                });
+        }
+
+        setInterval(updateUI, 3000);
+        updateUI();
+    </script>
+</body>
+</html>

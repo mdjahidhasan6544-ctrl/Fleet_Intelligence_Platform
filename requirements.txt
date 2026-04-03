@@ -1,0 +1,10 @@
+Django
+djangorestframework
+psycopg2-binary
+redis
+celery
+django-environ
+gunicorn
+pytest
+pytest-django
+requests
